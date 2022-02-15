@@ -1,2 +1,2 @@
-# mmr
-Merkle Mountain Range Implementation
+# operator-mmr
+Merkle Mountain Range Implementation for Operator Commitment
