@@ -8,12 +8,14 @@ mod mmr_store;
 #[cfg(test)]
 mod tests;
 pub mod util;
+mod structure;
 
 pub use error::{Error, Result};
 pub use helper::{leaf_index_to_mmr_size, leaf_index_to_pos};
 pub use merge::Merge;
 pub use mmr::{MerkleProof, MMR};
 pub use mmr_store::MMRStore;
+pub use structure::{StringHash, MergeStringHash};
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "std")] {
