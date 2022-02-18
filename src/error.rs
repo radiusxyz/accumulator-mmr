@@ -2,6 +2,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Error {
+    InvalidArgument,
     GetRootOnEmpty,
     InconsistentStore,
     StoreError(crate::string::String),
@@ -15,6 +16,7 @@ impl core::fmt::Display for Error {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         use Error::*;
         match self {
+            InvalidArgument => write!(f, "Invalid Argument")?,
             GetRootOnEmpty => write!(f, "Get root on an empty MMR")?,
             InconsistentStore => write!(f, "Inconsistent store")?,
             StoreError(msg) => write!(f, "Store error {}", msg)?,
