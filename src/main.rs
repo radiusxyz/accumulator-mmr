@@ -60,7 +60,7 @@ fn generate_proof(input: String) {
 
 // TODO : proof 생성해서 println!
 fn append_and_get_proof(input: String) {
-  
+
   let store = MemStore::default();
   let mut mmr = MMR::<_, MergeStringHash, _>::new(0, &store);
 
@@ -96,9 +96,9 @@ fn new_mmr_and_get_proof(input: String) {
 
   let store = MemStore::default();
   let mut mmr = MMR::<_, MergeStringHash, _>::new(0, &store);
-  let position = mmr.push(StringHash::from(input)).expect("push error");
+  mmr.push(StringHash::from(input)).expect("push error");
   let proof = mmr.gen_proof(vec![0]);
-  println!("{{\"order\" : {}, \"proof\" : {:#?}}}", position, proof);
+  println!("{{\"order\" : {}, \"proof\" : {:#?}}}", 1, proof);
 
 }
 
