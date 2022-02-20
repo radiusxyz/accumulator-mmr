@@ -1,5 +1,5 @@
 [package]
-name = "operator-mmr"
+name = "accumulator-mmr"
 version = "0.1.0"
 edition = "2021"
 
