@@ -2,7 +2,7 @@ use std::{env};
 use std::fs;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 
-pub use operator_mmr::{Error, Result, MMR, util::MemStore, MergeStringHash, StringHash};
+pub use accumulator_mmr::{Error, Result, MMR, util::MemStore, MergeStringHash, StringHash, leaf_index_to_pos};
 
 #[derive(Debug)]
 enum Mode {
@@ -12,7 +12,7 @@ enum Mode {
 
 const PROOF: &str = "proof";
 const VERIFY: &str = "verify";
-const MAXIMUM_NODE: u64 = 10;
+const MAXIMUM_NODE: u64 = 20;
 
 fn main() {
 
@@ -58,7 +58,6 @@ fn generate_proof(input: String) {
   }
 }
 
-// TODO : proof 생성해서 println!
 fn append_and_get_proof(input: String) {
 
   let store = MemStore::default();
@@ -79,8 +78,9 @@ fn append_and_get_proof(input: String) {
     node_count += 1;
   }
 
-  let proof = mmr.gen_proof(vec![node_count - 1]);
-  println!("{{\"order\" : {}, \"proof\" : {:#?}}}", node_count, proof);
+  let hash = StringHash::from(input);
+  let proof = mmr.gen_proof(vec![leaf_index_to_pos(node_count-1)]);
+  println!("{{\"order\" : {},\n \"proof\" : {:#?},\n \"hash\" : {:#?}}}", node_count, proof, hash);
 
   if node_count >= MAXIMUM_NODE {
     fs::remove_file("data/previous_state.txt").expect("File delete error");
@@ -96,18 +96,15 @@ fn new_mmr_and_get_proof(input: String) {
 
   let store = MemStore::default();
   let mut mmr = MMR::<_, MergeStringHash, _>::new(0, &store);
-  mmr.push(StringHash::from(input)).expect("push error");
+  let hash = StringHash::from(input);
+  let hash_clone = hash.clone();
+  mmr.push(hash).expect("push error");
   let proof = mmr.gen_proof(vec![0]);
-  println!("{{\"order\" : {}, \"proof\" : {:#?}}}", 1, proof);
+  println!("{{\"order\" : {},\n \"proof\" : {:#?},\n \"hash\" : {:#?}}}", 1, proof, hash_clone);
 
 }
 
 
-
-
-
-
-// TODO : 검증 로직 찾기
 fn verify_proof(_input: String) {
-  // index 받아서 proof 검증
+
 }
