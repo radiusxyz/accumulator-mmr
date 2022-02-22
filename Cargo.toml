@@ -1,5 +1,5 @@
 [package]
-name = "operator-mmr"
+name = "accumulator-mmr"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,6 +10,10 @@ std = []
 
 [dependencies]
 cfg-if = "0.1"
+bytes = "1.1.0"
+blake2b-rs = "0.1.4"
+hex = "0.4.3"
+
 
 [dev-dependencies]
 faster-hex = "0.3"
@@ -17,8 +21,6 @@ criterion = "0.3"
 rand = "0.6"
 proptest = "0.9.4"
 lazy_static = "1.3.0"
-bytes = "0.4"
-blake2b-rs = "0.1.4"
 
 [[bench]]
 name = "mmr_benchmark"
