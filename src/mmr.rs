@@ -40,6 +40,10 @@ impl<'a, T: Clone + PartialEq + Debug, M: Merge<Item = T>, S: MMRStore<T>> MMR<T
         Ok(Cow::Owned(elem))
     }
 
+    pub fn mmr_batch(&self) -> &MMRBatch<T, S> {
+        &self.batch
+    }
+
     pub fn mmr_size(&self) -> u64 {
         self.mmr_size
     }
@@ -92,11 +96,11 @@ impl<'a, T: Clone + PartialEq + Debug, M: Merge<Item = T>, S: MMRStore<T>> MMR<T
         self.bag_rhs_peaks(peaks)?.ok_or(Error::InconsistentStore)
     }
 
-    fn bag_rhs_peaks(&self, mut rhs_peaks: Vec<T>) -> Result<Option<T>> {
+    pub fn bag_rhs_peaks(&self, mut rhs_peaks: Vec<T>) -> Result<Option<T>> {
+        // println!("rhs_peaks: {:#?}", rhs_peaks);
         while rhs_peaks.len() > 1 {
             let right_peak = rhs_peaks.pop().expect("pop");
             let left_peak = rhs_peaks.pop().expect("pop");
-            println!("proof push! merge -> right : {:#?}, left: {:#?}", right_peak, left_peak);
             rhs_peaks.push(M::merge(&right_peak, &left_peak));
         }
         Ok(rhs_peaks.pop())
@@ -114,13 +118,14 @@ impl<'a, T: Clone + PartialEq + Debug, M: Merge<Item = T>, S: MMRStore<T>> MMR<T
         pos_list: Vec<u64>,
         peak_pos: u64,
     ) -> Result<()> {
-        println!("pos_list: {:#?}, peak_pos: {}", pos_list, peak_pos);
+        // println!("pos_list: {:#?}, peak_pos: {}", pos_list, peak_pos);
         // do nothing if position itself is the peak
         if pos_list.len() == 1 && pos_list == [peak_pos] {
             return Ok(());
         }
         // take peak root from store if no positions need to be proof
         if pos_list.is_empty() {
+            // println!("push! peak_pos: {}", peak_pos);
             proof.push(
                 self.batch
                     .get_elem(peak_pos)?
@@ -154,7 +159,7 @@ impl<'a, T: Clone + PartialEq + Debug, M: Merge<Item = T>, S: MMRStore<T>> MMR<T
                 // drop sibling
                 queue.pop_front();
             } else {
-                println!("proof push! sib_position : {}", sib_pos);
+                // println!("proof push! sib_position : {}", sib_pos);
                 proof.push(
                     self.batch
                         .get_elem(sib_pos)?
@@ -202,10 +207,9 @@ impl<'a, T: Clone + PartialEq + Debug, M: Merge<Item = T>, S: MMRStore<T>> MMR<T
             return Err(Error::GenProofForInvalidLeaves);
         }
 
-        println!("bagging_track : {}", bagging_track);
+        // println!("bagging_track : {}", bagging_track);
 
-        println!("bagging_before_proof : {:#?}", proof);
-
+        // println!("bagging_before_proof : {:#?}", proof);
         if bagging_track > 1 {
             let rhs_peaks = proof.split_off(proof.len() - bagging_track);
             proof.push(self.bag_rhs_peaks(rhs_peaks)?.expect("bagging rhs peaks"));
@@ -219,10 +223,10 @@ impl<'a, T: Clone + PartialEq + Debug, M: Merge<Item = T>, S: MMRStore<T>> MMR<T
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MerkleProof<T, M> {
     mmr_size: u64,
-    proof: Vec<T>,
+    pub proof: Vec<T>,
     merge: PhantomData<M>,
 }
 
