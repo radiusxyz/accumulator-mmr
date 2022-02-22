@@ -93,10 +93,6 @@ fn append_and_get_proof(input: String) {
 
 }
 
-fn restore_previous_state() -> MMR {
-
-}
-
 fn string_hash_to_hex(hash: &StringHash) -> String {
   let StringHash(raw_input) = hash;
   let hex_string = hex::encode(raw_input.as_ref());
@@ -178,13 +174,10 @@ fn verify_partial_proof(order: u64, proof: MerkleProof<StringHash, MergeStringHa
             .collect::<Result<Vec<StringHash>>>().expect("invalid peak");
 
   let root = mmr.bag_rhs_peaks(peaks).expect("invalid root").ok_or(Error::InconsistentStore).expect("invalid root");
-
   let leaf = vec![(leaf_index_to_pos(order - 1), elem_hash)];
 
-  // TODO : leaf_index_to_mmr_size 확인 assert
   let result = proof.verify(root, leaf).unwrap();
 
-  println!("{:#?}", result);
-
+  println!("Merkle proof verification : {:#?}", result);
   assert!(result);
 }
