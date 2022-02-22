@@ -145,8 +145,6 @@ fn parse_verify_args(args: Vec<String>) -> (u64, MerkleProof<StringHash, MergeSt
 
   let proof: MerkleProof<StringHash, MergeStringHash> = MerkleProof::new(leaf_index_to_mmr_size(order - 1), hash_proof_vec);
 
-  println!("order: {}, proof: {:#?}, elem_hash: {:#?}", order, proof, elem_hash); 
-
   (order, proof, elem_hash)
 }
 
