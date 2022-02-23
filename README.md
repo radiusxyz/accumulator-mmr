@@ -53,7 +53,6 @@ sh ./scripts/verify.sh
 
 ```
 Merkle proof verification : true
-
 ```
 
 ### References
