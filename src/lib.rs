@@ -1,6 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod error;
+mod hash;
 pub mod helper;
 mod merge;
 mod mmr;
@@ -8,14 +9,13 @@ mod mmr_store;
 #[cfg(test)]
 mod tests;
 pub mod util;
-mod hash;
 
 pub use error::{Error, Result};
+pub use hash::{MergeStringHash, StringHash};
 pub use helper::{leaf_index_to_mmr_size, leaf_index_to_pos};
 pub use merge::Merge;
 pub use mmr::{MerkleProof, MMR};
 pub use mmr_store::MMRStore;
-pub use hash::{StringHash, MergeStringHash};
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "std")] {

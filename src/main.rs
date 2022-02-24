@@ -1,17 +1,16 @@
-use std::{env, str};
+use bytes::Bytes;
+use hex;
 use std::fs;
 use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::{env, str};
 
-pub use accumulator_mmr::{Error, Result, MMR, util::MemStore, MergeStringHash, StringHash, MerkleProof};
-pub use accumulator_mmr::helper::{leaf_index_to_pos, leaf_index_to_mmr_size, get_peaks};
-use bytes::Bytes;
-
-use hex;
+pub use accumulator_mmr::helper::{get_peaks, leaf_index_to_mmr_size, leaf_index_to_pos};
+pub use accumulator_mmr::{util::MemStore, Error, MergeStringHash, MerkleProof, Result, StringHash, MMR};
 
 #[derive(Debug)]
 enum Mode {
   GenerateProof,
-  VerifyProof
+  VerifyProof,
 }
 
 const PROOF: &str = "proof";
@@ -19,7 +18,6 @@ const VERIFY: &str = "verify";
 const MAXIMUM_NODE: u64 = 20;
 
 fn main() {
-
   let mode: Mode;
   let input: String;
   let args: Vec<String>;
@@ -27,7 +25,7 @@ fn main() {
 
   match mode {
     Mode::GenerateProof => generate_proof(input),
-    Mode::VerifyProof => verify_proof(input, args)
+    Mode::VerifyProof => verify_proof(input, args),
   }
 }
 
@@ -50,7 +48,6 @@ fn get_arguments() -> Result<(Mode, String, Vec<String>)> {
 }
 
 fn generate_proof(input: String) {
-
   let file = fs::File::open("data/previous_state.txt");
 
   match file {
@@ -60,12 +57,10 @@ fn generate_proof(input: String) {
 }
 
 fn append_and_get_proof(input: String) {
-
   let store = MemStore::default();
   let mut mmr = MMR::<_, MergeStringHash, _>::new(0, &store);
 
-  let mut file = fs::OpenOptions::new().append(true).open("data/previous_state.txt").expect(
-    "cannot open file");
+  let mut file = fs::OpenOptions::new().append(true).open("data/previous_state.txt").expect("cannot open file");
   file.write_all(b"\n").expect("write error");
   file.write_all(input.as_bytes()).expect("Unable to write data");
 
@@ -85,12 +80,11 @@ fn append_and_get_proof(input: String) {
   let mmr_size: u64 = merkle_proof.mmr_size();
   let hex_proof_vec: Vec<String> = merkle_proof.proof_items().iter().map(|hash| string_hash_to_hex(hash)).collect();
 
-  println!("{{\"order\" : {}, \n\"mmr_size\": {},\n \"proof\" : {:#?},\n \"hash\" : {:#?}}}", node_count, mmr_size, hex_proof_vec, elem_hex);
+  print!("{{\"order\" : {}, \"mmr_size\": {}, \"proof\" : {:?}, \"hash\" : {:?}}}", node_count, mmr_size, hex_proof_vec, elem_hex);
 
   if node_count >= MAXIMUM_NODE {
     fs::remove_file("data/previous_state.txt").expect("File delete error");
   }
-
 }
 
 fn string_hash_to_hex(hash: &StringHash) -> String {
@@ -108,7 +102,6 @@ fn hex_to_string_hash(hex_string: String) -> StringHash {
 }
 
 fn new_mmr_and_get_proof(input: String) {
-
   let file = fs::File::create("data/previous_state.txt").expect("Unable to create file");
   let mut file = BufWriter::new(file);
   file.write_all(input.as_bytes()).expect("Unable to write data");
@@ -123,11 +116,10 @@ fn new_mmr_and_get_proof(input: String) {
   let mmr_size: u64 = merkle_proof.mmr_size();
   let hex_proof_vec: Vec<String> = merkle_proof.proof_items().iter().map(|hash| string_hash_to_hex(hash)).collect();
 
-  println!("{{\"order\" : {},\n \"mmr_size\" : {:#?}, \n \"proof\" : {:#?},\n \"hash\" : {:#?}}}", 1, mmr_size, hex_proof_vec, elem_hex);
+  print!("{{\"order\" : {}, \"mmr_size\" : {:?},  \"proof\" : {:?}, \"hash\" : {:?}}}", 1, mmr_size, hex_proof_vec, elem_hex);
 }
 
 fn verify_proof(input: String, args: Vec<String>) {
-  
   let order: u64;
   let proof: MerkleProof<StringHash, MergeStringHash>;
   let elem_hash: StringHash;
@@ -163,19 +155,16 @@ fn verify_partial_proof(order: u64, proof: MerkleProof<StringHash, MergeStringHa
   let partial_mmr_size = proof.mmr_size();
 
   let peaks = get_peaks(partial_mmr_size)
-            .into_iter()
-            .map(|peak_pos| {
-                mmr.mmr_batch()
-                  .get_elem(peak_pos)
-                  .and_then(|elem| Ok(elem.expect("invalid element")))
-            })
-            .collect::<Result<Vec<StringHash>>>().expect("invalid peak");
+    .into_iter()
+    .map(|peak_pos| mmr.mmr_batch().get_elem(peak_pos).and_then(|elem| Ok(elem.expect("invalid element"))))
+    .collect::<Result<Vec<StringHash>>>()
+    .expect("invalid peak");
 
   let root = mmr.bag_rhs_peaks(peaks).expect("invalid root").ok_or(Error::InconsistentStore).expect("invalid root");
   let leaf = vec![(leaf_index_to_pos(order - 1), elem_hash)];
 
   let result = proof.verify(root, leaf).unwrap();
 
-  println!("Merkle proof verification : {:#?}", result);
+  print!("{:?}", result);
   assert!(result);
 }

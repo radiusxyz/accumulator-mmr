@@ -29,3 +29,11 @@ harness = false
 [[bench]]
 name = "helper_benchmark"
 harness = false
+
+
+[profile.release]
+rpath = true
+lto   = true
+debug = false
+
+# panic = 'abort'
