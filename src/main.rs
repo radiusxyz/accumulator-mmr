@@ -15,7 +15,7 @@ enum Mode {
 
 const PROOF: &str = "proof";
 const VERIFY: &str = "verify";
-const MAXIMUM_NODE: u64 = 20;
+const MAXIMUM_NODE: u64 = 1000;
 
 fn main() {
   let mode: Mode;
