@@ -19,21 +19,23 @@ const MAXIMUM_NODE: u64 = 1024;
 
 fn main() {
   let mode: Mode;
+  let file_name: String;
   let input: String;
   let args: Vec<String>;
-  (mode, input, args) = get_arguments().expect("check your arguments");
+  (mode, file_name, input, args) = get_arguments().expect("check your arguments");
 
   match mode {
-    Mode::GenerateProof => generate_proof(input),
-    Mode::VerifyProof => verify_proof(input, args),
+    Mode::GenerateProof => generate_proof(input, file_name),
+    Mode::VerifyProof => verify_proof(input, file_name, args),
   }
 }
 
-fn get_arguments() -> Result<(Mode, String, Vec<String>)> {
+fn get_arguments() -> Result<(Mode, String, String, Vec<String>)> {
   let args: Vec<String> = env::args().collect();
 
   let str_mode = args[1].clone();
-  let input = args[2].clone();
+  let file_name = args[2].clone();
+  let input = args[3].clone();
   let enum_mode: Mode;
 
   if str_mode == PROOF {
@@ -44,27 +46,27 @@ fn get_arguments() -> Result<(Mode, String, Vec<String>)> {
     return Err(Error::InvalidArgument);
   }
 
-  return Ok((enum_mode, input, args));
+  return Ok((enum_mode, file_name, input, args));
 }
 
-fn generate_proof(input: String) {
-  let file = fs::File::open("data/previous_state.txt");
+fn generate_proof(input: String, file_name: String) {
+  let file = fs::File::open(format!("data/{}.txt", file_name));
 
   match file {
-    Ok(_file) => append_and_get_proof(input),
-    Err(_) => new_mmr_and_get_proof(input),
+    Ok(_file) => append_and_get_proof(input, file_name),
+    Err(_) => new_mmr_and_get_proof(input, file_name),
   }
 }
 
-fn append_and_get_proof(input: String) {
+fn append_and_get_proof(input: String, file_name: String) {
   let store = MemStore::default();
   let mut mmr = MMR::<_, MergeStringHash, _>::new(0, &store);
 
-  let mut file = fs::OpenOptions::new().append(true).open("data/previous_state.txt").expect("cannot open file");
+  let mut file = fs::OpenOptions::new().append(true).open(format!("data/{}.txt", file_name)).expect("cannot open file");
   file.write_all(b"\n").expect("write error");
   file.write_all(input.as_bytes()).expect("Unable to write data");
 
-  let file = fs::File::open("data/previous_state.txt").expect("Unable to read data");
+  let file = fs::File::open(format!("data/{}.txt", file_name)).expect("Unable to read data");
   let reader = BufReader::new(file);
 
   let mut node_count = 0;
@@ -83,7 +85,7 @@ fn append_and_get_proof(input: String) {
   print!("{{\"order\" : {}, \"mmr_size\": {}, \"proof\" : {:?}, \"hash\" : {:?}}}", node_count, mmr_size, hex_proof_vec, elem_hex);
 
   if node_count >= MAXIMUM_NODE {
-    fs::remove_file("data/previous_state.txt").expect("File delete error");
+    fs::remove_file(format!("data/{}.txt", file_name)).expect("File delete error");
   }
 }
 
@@ -101,8 +103,8 @@ fn hex_to_string_hash(hex_string: String) -> StringHash {
   string_hash
 }
 
-fn new_mmr_and_get_proof(input: String) {
-  let file = fs::File::create("data/previous_state.txt").expect("Unable to create file");
+fn new_mmr_and_get_proof(input: String, file_name: String) {
+  let file = fs::File::create(format!("data/{}.txt", file_name)).expect("Unable to create file");
   let mut file = BufWriter::new(file);
   file.write_all(input.as_bytes()).expect("Unable to write data");
 
@@ -119,20 +121,20 @@ fn new_mmr_and_get_proof(input: String) {
   print!("{{\"order\" : {}, \"mmr_size\" : {:?},  \"proof\" : {:?}, \"hash\" : {:?}}}", 1, mmr_size, hex_proof_vec, elem_hex);
 }
 
-fn verify_proof(input: String, args: Vec<String>) {
+fn verify_proof(input: String, file_name: String, args: Vec<String>) {
   let order: u64;
   let proof: MerkleProof<StringHash, MergeStringHash>;
   let elem_hash: StringHash;
   (order, proof, elem_hash) = parse_verify_args(args);
 
-  verify_partial_proof(order, proof, elem_hash);
+  verify_partial_proof(order, file_name, proof, elem_hash);
 }
 
 fn parse_verify_args(args: Vec<String>) -> (u64, MerkleProof<StringHash, MergeStringHash>, StringHash) {
-  let order: u64 = args[2].parse().unwrap();
-  let proof_length: usize = args[3].parse().unwrap();
-  let elem_hex = &args[4 + proof_length];
-  let hash_proof_vec: Vec<StringHash> = args[4..4 + proof_length].iter().map(|hex| hex_to_string_hash(hex.to_string())).collect();
+  let order: u64 = args[3].parse().unwrap();
+  let proof_length: usize = args[4].parse().unwrap();
+  let elem_hex = &args[5 + proof_length];
+  let hash_proof_vec: Vec<StringHash> = args[5..5 + proof_length].iter().map(|hex| hex_to_string_hash(hex.to_string())).collect();
   let elem_hash = hex_to_string_hash(elem_hex.to_string());
 
   let proof: MerkleProof<StringHash, MergeStringHash> = MerkleProof::new(leaf_index_to_mmr_size(order - 1), hash_proof_vec);
@@ -140,11 +142,11 @@ fn parse_verify_args(args: Vec<String>) -> (u64, MerkleProof<StringHash, MergeSt
   (order, proof, elem_hash)
 }
 
-fn verify_partial_proof(order: u64, proof: MerkleProof<StringHash, MergeStringHash>, elem_hash: StringHash) {
+fn verify_partial_proof(order: u64, file_name: String, proof: MerkleProof<StringHash, MergeStringHash>, elem_hash: StringHash) {
   let store = MemStore::default();
   let mut mmr = MMR::<_, MergeStringHash, _>::new(0, &store);
 
-  let file = fs::File::open("data/previous_state.txt").expect("Unable to read data");
+  let file = fs::File::open(format!("data/{}.txt", file_name)).expect("Unable to read data");
   let reader = BufReader::new(file);
 
   for line in reader.lines() {
